@@ -5,12 +5,22 @@ from datetime import datetime
 import os
 
 # Database configuration
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./unibus_validation.db")
-
-engine = create_engine(
-    DATABASE_URL, 
-    connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {}
+# SQLite database for independent microservice storage
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "sqlite:///./data/unibus_validation.db"
 )
+
+# SQLite needs check_same_thread=False for FastAPI async operations
+if "sqlite" in DATABASE_URL:
+    engine = create_engine(
+        DATABASE_URL,
+        connect_args={"check_same_thread": False},
+        pool_pre_ping=True
+    )
+else:
+    engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()

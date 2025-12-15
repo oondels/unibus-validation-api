@@ -1,129 +1,150 @@
-# UniBus – Student Validation API
+# UniBus – API de Validação de Estudantes
 
-## Overview
+## Visão Geral
 
-Secondary microservice responsible for validating student eligibility for the UniBus service. This API applies deterministic validation rules, persists validation results, and exposes configuration endpoints.
+Microserviço secundário responsável por validar a elegibilidade de estudantes para o serviço UniBus. Esta API aplica regras de validação determinísticas, persiste resultados de validação e expõe endpoints de configuração.
 
-**Service Name:** `unibus-student-validation-api`
+**Nome do Serviço:** `unibus-student-validation-api`
 
-## Features
+## Funcionalidades
 
-- ✅ Student eligibility validation with configurable rules
-- ✅ Persistent storage of validation results
-- ✅ RESTful API with GET, POST, PUT, and DELETE operations
-- ✅ SQLite database (easy to switch to PostgreSQL/MySQL)
-- ✅ Docker support
-- ✅ FastAPI with automatic OpenAPI documentation
-- ✅ Simple, academic-friendly architecture
+- ✅ Validação de elegibilidade de estudantes com regras configuráveis
+- ✅ Armazenamento persistente de resultados de validação
+- ✅ API RESTful com operações GET, POST, PUT e DELETE
+- ✅ Banco de dados SQLite (embarcado, sem necessidade de banco externo)
+- ✅ Suporte Docker
+- ✅ FastAPI com documentação OpenAPI automática
+- ✅ Arquitetura simples e amigável para fins acadêmicos
 
-## Tech Stack
+## Stack Tecnológica
 
 - **Framework:** FastAPI
-- **Database:** SQLite (with SQLAlchemy ORM)
-- **Language:** Python 3.11+
+- **Banco de Dados:** SQLite (embarcado, baseado em arquivo)
+- **Linguagem:** Python 3.11+
 - **Container:** Docker
+- **ORM:** SQLAlchemy
 
-## Installation
+## Instalação
 
-### Prerequisites
+### Pré-requisitos
 
 - Python 3.11+
-- Docker and Docker Compose (for containerized deployment)
-- Access to `unibus-network` Docker network (shared with other UniBus services)
+- Docker e Docker Compose (para deploy containerizado)
+- Acesso à rede Docker `unibus-network` (compartilhada com outros serviços UniBus)
 
-### Option 1: Local Development
+**Nota:** Não é necessário servidor de banco de dados externo - SQLite é embarcado!
 
-1. Clone the repository and navigate to the project directory:
+### Opção 1: Desenvolvimento Local
+
+1. Clone o repositório e navegue até o diretório do projeto:
 ```bash
 cd unibus-validation-api
 ```
 
-2. Create a virtual environment:
+2. Crie um ambiente virtual:
 ```bash
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate  # No Windows: venv\Scripts\activate
 ```
 
-3. Install dependencies:
+3. Instale as dependências:
 ```bash
 pip install -r requirements.txt
 ```
 
-4. Run the application:
+4. Execute a aplicação:
 ```bash
 python -m app.main
-# or
+# ou
 uvicorn app.main:app --reload --port 8001
 ```
 
-### Option 2: Docker
+### Opção 2: Docker
 
-1. First, create the shared network (if it doesn't exist):
+1. Primeiro, crie a rede compartilhada (se ainda não existir):
 ```bash
 docker network create unibus-network
 ```
 
-2. Build and run with Docker Compose:
+2. Build e execute com Docker Compose:
 ```bash
 docker-compose up -d
 ```
 
-3. Or build manually:
+**Nota:** O arquivo do banco de dados SQLite é persistido em um volume Docker (`validation-db`), então os dados sobrevivem a reinicializações do container.
+
+3. Ou faça o build manualmente:
 ```bash
 docker build -t unibus-validation-api .
-docker run -p 8001:8001 --network unibus-network unibus-validation-api
+docker run -p 8001:8001 \
+  --network unibus-network \
+  -v validation-db:/app/data \
+  unibus-validation-api
 ```
 
-## API Access
+## Acesso à API
 
-- **API Base URL:** http://localhost:8001
-- **Interactive Docs:** http://localhost:8001/docs
+- **URL Base da API:** http://localhost:8001
+- **Documentação Interativa:** http://localhost:8001/docs
 - **ReDoc:** http://localhost:8001/redoc
 
-## Database
+## Banco de Dados
 
-The service uses SQLite by default. The database is automatically created on first run with default validation rules.
+O serviço usa **SQLite** como banco de dados - um banco de dados leve baseado em arquivo, perfeito para as necessidades deste microserviço. O banco de dados é criado automaticamente na primeira execução com as regras de validação padrão.
 
-### Tables
+### Por que SQLite?
+
+- ✅ **Armazenamento Independente:** Cada microserviço tem seu próprio banco de dados (boa prática de microserviços)
+- ✅ **Deploy Simples:** Arquivo único, sem necessidade de servidor de banco de dados separado
+- ✅ **Backup Fácil:** Basta copiar o arquivo do banco de dados
+- ✅ **Suficiente para o Caso de Uso:** Baixo volume de registros de validação
+- ✅ **Configuração Zero:** Funciona imediatamente
+
+### Localização do Banco de Dados
+
+- **Docker (Produção):** `/app/data/unibus_validation.db` (persistido via volume)
+- **Desenvolvimento Local:** `./unibus_validation.db` (na raiz do projeto)
+
+### Tabelas
 
 #### `student_validations`
-Stores validation results for each student validation request.
+Armazena os resultados de validação para cada requisição de validação de estudante.
 
-| Field        | Type     | Description                  |
-|--------------|----------|------------------------------|
-| id           | Integer  | Auto-increment primary key   |
-| email        | String   | Student email                |
-| registration | String   | Student registration number  |
-| is_valid     | Boolean  | Validation result            |
-| reason       | String   | Reason for validation result |
-| validated_at | DateTime | Timestamp of validation      |
+| Campo        | Tipo     | Descrição                        |
+|--------------|----------|----------------------------------|
+| id           | Integer  | Chave primária auto-incremento   |
+| email        | String   | Email do estudante               |
+| registration | String   | Número de matrícula do estudante |
+| is_valid     | Boolean  | Resultado da validação           |
+| reason       | String   | Razão do resultado da validação  |
+| validated_at | DateTime | Timestamp da validação           |
 
 #### `validation_rules`
-Stores configuration for validation rules.
+Armazena a configuração das regras de validação.
 
-| Field     | Type    | Description                |
-|-----------|---------|----------------------------|
-| id        | Integer | Auto-increment primary key |
-| rule_name | String  | Rule identifier            |
-| enabled   | Boolean | Whether the rule is active |
+| Campo     | Tipo    | Descrição                    |
+|-----------|---------|------------------------------|
+| id        | Integer | Chave primária auto-incremento |
+| rule_name | String  | Identificador da regra       |
+| enabled   | Boolean | Se a regra está ativa        |
 
-## Validation Rules
+## Regras de Validação
 
-The service implements two simple, configurable validation rules:
+O serviço implementa duas regras de validação simples e configuráveis:
 
-1. **institutional_email_check**: Email must contain `@aluno` OR end with `.edu.br`
-2. **registration_length_check**: Registration number must be at least 6 characters
+1. **institutional_email_check**: Email deve conter `@aluno` OU terminar com `.edu.br`
+2. **registration_length_check**: Número de matrícula deve ter pelo menos 6 caracteres
 
-**Note:** All enabled rules must pass for a student to be considered valid.
+**Nota:** Todas as regras habilitadas devem passar para que o estudante seja considerado válido.
 
-## API Endpoints
+## Endpoints da API
 
 ### Health Check
 
 #### `GET /health`
-Simple health check endpoint.
+Endpoint simples de verificação de saúde.
 
-**Response:**
+**Resposta:**
 ```json
 {
   "status": "ok"
@@ -132,12 +153,12 @@ Simple health check endpoint.
 
 ---
 
-### Student Validation
+### Validação de Estudantes
 
 #### `POST /validations/validate-student`
-Main endpoint: Validates a student and stores the result.
+Endpoint principal: valida um estudante e armazena o resultado.
 
-**Request:**
+**Requisição:**
 ```json
 {
   "name": "João Silva",
@@ -146,7 +167,7 @@ Main endpoint: Validates a student and stores the result.
 }
 ```
 
-**Response:**
+**Resposta:**
 ```json
 {
   "is_valid": true,
@@ -157,9 +178,9 @@ Main endpoint: Validates a student and stores the result.
 ---
 
 #### `GET /validations`
-Returns all stored validation records (ordered by most recent).
+Retorna todos os registros de validação armazenados (ordenados do mais recente).
 
-**Response:**
+**Resposta:**
 ```json
 [
   {
@@ -176,9 +197,9 @@ Returns all stored validation records (ordered by most recent).
 ---
 
 #### `GET /validations/{id}`
-Returns a single validation record by ID.
+Retorna um único registro de validação por ID.
 
-**Response:**
+**Resposta:**
 ```json
 {
   "id": 1,
@@ -190,7 +211,7 @@ Returns a single validation record by ID.
 }
 ```
 
-**Error (404):**
+**Erro (404):**
 ```json
 {
   "detail": "Validation with id 999 not found"
@@ -200,16 +221,16 @@ Returns a single validation record by ID.
 ---
 
 #### `DELETE /validations/{id}`
-Deletes a validation record by ID.
+Deleta um registro de validação por ID.
 
-**Response:**
+**Resposta:**
 ```json
 {
   "message": "Validation deleted successfully"
 }
 ```
 
-**Error (404):**
+**Erro (404):**
 ```json
 {
   "detail": "Validation with id 999 not found"
@@ -218,12 +239,12 @@ Deletes a validation record by ID.
 
 ---
 
-### Validation Rules Management
+### Gerenciamento de Regras de Validação
 
 #### `GET /rules`
-Returns all validation rules and their current status.
+Retorna todas as regras de validação e seus status atuais.
 
-**Response:**
+**Resposta:**
 ```json
 [
   {
@@ -240,20 +261,20 @@ Returns all validation rules and their current status.
 ---
 
 #### `PUT /rules/{rule_name}`
-Enable or disable a validation rule.
+Habilita ou desabilita uma regra de validação.
 
-**Available Rules:**
+**Regras Disponíveis:**
 - `institutional_email_check`
 - `registration_length_check`
 
-**Request:**
+**Requisição:**
 ```json
 {
   "enabled": false
 }
 ```
 
-**Response:**
+**Resposta:**
 ```json
 {
   "rule_name": "institutional_email_check",
@@ -261,7 +282,7 @@ Enable or disable a validation rule.
 }
 ```
 
-**Error (404):**
+**Erro (404):**
 ```json
 {
   "detail": "Rule 'invalid_rule' not found"
@@ -270,27 +291,27 @@ Enable or disable a validation rule.
 
 ---
 
-## Integration with Core API
+## Integração com a API Core
 
-This service is designed to be consumed by the `unibus-core-api` during student registration.
+Este serviço foi projetado para ser consumido pela `unibus-core-api` durante o cadastro de estudantes.
 
-### Network Configuration
+### Configuração de Rede
 
-Both services must be on the same Docker network (`unibus-network`) to communicate.
+Ambos os serviços devem estar na mesma rede Docker (`unibus-network`) para se comunicarem.
 
-**Create the network:**
+**Criar a rede:**
 ```bash
 docker network create unibus-network
 ```
 
-### Suggested Integration Flow:
+### Fluxo de Integração Sugerido:
 
-1. User calls `POST /students` on `unibus-core-api`
-2. Core API calls `POST /validations/validate-student` on this service (http://unibus-validation-api:8001)
-3. If `is_valid = false`, Core API returns HTTP 400 to user
-4. If `is_valid = true`, Core API persists the student and returns HTTP 201
+1. Usuário chama `POST /students` na `unibus-core-api`
+2. API Core chama `POST /validations/validate-student` neste serviço (http://unibus-validation-api:8001)
+3. Se `is_valid = false`, API Core retorna HTTP 400 ao usuário
+4. Se `is_valid = true`, API Core persiste o estudante e retorna HTTP 201
 
-### Example Integration Code (Python):
+### Exemplo de Código de Integração (Python):
 
 ```python
 import httpx
@@ -315,11 +336,11 @@ async def register_student(student_data):
     # ... save student to database ...
 ```
 
-## Testing
+## Testes
 
-### Manual Testing with curl
+### Testes Manuais com curl
 
-**Validate a student:**
+**Validar um estudante:**
 ```bash
 curl -X POST http://localhost:8001/validations/validate-student \
   -H "Content-Type: application/json" \
@@ -330,85 +351,85 @@ curl -X POST http://localhost:8001/validations/validate-student \
   }'
 ```
 
-**Get all validations:**
+**Obter todas as validações:**
 ```bash
 curl http://localhost:8001/validations
 ```
 
-**Disable a rule:**
+**Desabilitar uma regra:**
 ```bash
 curl -X PUT http://localhost:8001/rules/institutional_email_check \
   -H "Content-Type: application/json" \
   -d '{"enabled": false}'
 ```
 
-**Delete a validation:**
+**Deletar uma validação:**
 ```bash
 curl -X DELETE http://localhost:8001/validations/1
 ```
 
-## Project Structure
+## Estrutura do Projeto
 
 ```
 unibus-validation-api/
 ├── app/
-│   ├── __init__.py              # App initialization
-│   ├── main.py                  # FastAPI application and startup
-│   ├── db.py                    # Database configuration and session
-│   ├── models.py                # SQLAlchemy models
-│   ├── schemas.py               # Pydantic schemas
-│   ├── services.py              # Business logic
-│   ├── external.py              # External service integrations
+│   ├── __init__.py              # Inicialização do app
+│   ├── main.py                  # Aplicação FastAPI e startup
+│   ├── db.py                    # Configuração do banco de dados e sessão
+│   ├── models.py                # Modelos SQLAlchemy
+│   ├── schemas.py               # Schemas Pydantic
+│   ├── services.py              # Lógica de negócio
+│   ├── external.py              # Integrações com serviços externos
 │   └── routers/
-│       ├── __init__.py          # Router initialization
-│       ├── routes.py            # Health check routes
-│       ├── students.py          # Student validation routes
-│       └── trips.py             # Validation rules routes
-├── Dockerfile                    # Docker image configuration
-├── docker-compose.yml            # Docker Compose configuration
-├── requirements.txt              # Python dependencies
-├── .env.example                  # Environment variables template
-├── .gitignore                    # Git ignore rules
-└── README.md                     # This file
+│       ├── __init__.py          # Inicialização dos routers
+│       ├── routes.py            # Rotas de health check
+│       ├── students.py          # Rotas de validação de estudantes
+│       └── trips.py             # Rotas de regras de validação
+├── Dockerfile                    # Configuração da imagem Docker
+├── docker-compose.yml            # Configuração do Docker Compose
+├── requirements.txt              # Dependências Python
+├── .env.example                  # Template de variáveis de ambiente
+├── .gitignore                    # Regras do Git ignore
+└── README.md                     # Este arquivo
 ```
 
-## Environment Variables
+## Variáveis de Ambiente
 
-Create a `.env` file (see `.env.example`):
+Crie um arquivo `.env` (veja `.env.example`):
 
 ```env
-DATABASE_URL=sqlite:///./unibus_validation.db
+DATABASE_URL=sqlite:///./data/unibus_validation.db
 API_HOST=0.0.0.0
 API_PORT=8001
 ```
 
-## Why This Architecture Works Well
+## Por Que Esta Arquitetura Funciona Bem
 
-✅ **Clear separation of concerns** - Single responsibility (validation only)  
-✅ **Independent persistence** - Own database and data model  
-✅ **RESTful design** - Uses all major HTTP verbs (GET, POST, PUT, DELETE)  
-✅ **Easy to demonstrate** - Simple rules that are easy to explain academically  
-✅ **No external dependencies** - Completely self-contained  
-✅ **Extensible** - Easy to add new validation rules or switch to real services  
-✅ **Microservice-ready** - Can be deployed independently  
-✅ **Academic-friendly** - Clear educational value for microservices learning
+✅ **Separação clara de responsabilidades** - Responsabilidade única (apenas validação)  
+✅ **Persistência independente** - Banco de dados e modelo de dados próprios  
+✅ **Design RESTful** - Usa todos os principais verbos HTTP (GET, POST, PUT, DELETE)  
+✅ **Fácil de demonstrar** - Regras simples que são fáceis de explicar academicamente  
+✅ **Sem dependências externas** - Completamente auto-contido  
+✅ **Extensível** - Fácil adicionar novas regras de validação ou trocar por serviços reais  
+✅ **Pronto para microsserviços** - Pode ser implantado independentemente  
+✅ **Amigável para fins acadêmicos** - Valor educacional claro para aprendizado de microsserviços
 
-## Future Enhancements
+## Melhorias Futuras
 
-- Integration with actual university registration systems
-- More complex validation rules (e.g., check against enrollment database)
-- Authentication and authorization
+- Integração com sistemas reais de registro universitário
+- Regras de validação mais complexas (ex: verificar contra banco de matrículas)
+- Autenticação e autorização
 - Rate limiting
-- Metrics and monitoring
-- PostgreSQL/MySQL support for production
-- Async validation with message queues
+- Métricas e monitoramento
+- Suporte a PostgreSQL/MySQL para produção
+- Validação assíncrona com filas de mensagens
 
-## License
+## Licença
 
-MIT License - Academic use for PUC-Rio Sprint 3 Microservices MVP
+Licença MIT - Uso acadêmico para MVP de Microsserviços Sprint 3 PUC-Rio
 
 ---
 
-**Author:** UniBus Development Team  
-**Version:** 1.0.0  
-**Last Updated:** December 15, 2025
+**Autor:** Equipe de Desenvolvimento UniBus  
+**Versão:** 1.0.0  
+**Última Atualização:** 15 de dezembro de 2025

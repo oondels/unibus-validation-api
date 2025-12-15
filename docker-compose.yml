@@ -7,22 +7,22 @@ services:
     ports:
       - "8001:8001"
     environment:
-      - DATABASE_URL=sqlite:///./unibus_validation.db
+      - DATABASE_URL=sqlite:///./data/unibus_validation.db
     volumes:
-      - validation-data:/app/data
-      - ./unibus_validation.db:/app/unibus_validation.db
+      - validation-db:/app/data
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
       interval: 30s
       timeout: 3s
       retries: 3
-      start_period: 5s
+      start_period: 10s
     networks:
       - unibus-network
 
 volumes:
-  validation-data:
+  validation-db:
+    driver: local
 
 networks:
   unibus-network:
