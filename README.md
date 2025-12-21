@@ -10,7 +10,8 @@ Microserviço secundário responsável por validar a elegibilidade de estudantes
 
 - ✅ Validação de elegibilidade de estudantes com regras configuráveis
 - ✅ Armazenamento persistente de resultados de validação
-- ✅ API RESTful com operações GET, POST, PUT e DELETE
+- ✅ API RESTful completa com operações GET, POST, PUT e DELETE
+- ✅ CRUD completo de regras de validação (criar, ler, atualizar, deletar)
 - ✅ Banco de dados SQLite (embarcado, sem necessidade de banco externo)
 - ✅ Suporte Docker
 - ✅ FastAPI com documentação OpenAPI automática
@@ -260,6 +261,34 @@ Retorna todas as regras de validação e seus status atuais.
 
 ---
 
+#### `POST /rules`
+Cria uma nova regra de validação.
+
+**Requisição:**
+```json
+{
+  "rule_name": "custom_rule_check",
+  "enabled": true
+}
+```
+
+**Resposta (201 Created):**
+```json
+{
+  "rule_name": "custom_rule_check",
+  "enabled": true
+}
+```
+
+**Erro (409 Conflict):**
+```json
+{
+  "detail": "Rule 'custom_rule_check' already exists"
+}
+```
+
+---
+
 #### `PUT /rules/{rule_name}`
 Habilita ou desabilita uma regra de validação.
 
@@ -288,6 +317,27 @@ Habilita ou desabilita uma regra de validação.
   "detail": "Rule 'invalid_rule' not found"
 }
 ```
+
+---
+
+#### `DELETE /rules/{rule_name}`
+Remove uma regra de validação existente.
+
+**Resposta:**
+```json
+{
+  "message": "Rule 'custom_rule_check' deleted successfully"
+}
+```
+
+**Erro (404):**
+```json
+{
+  "detail": "Rule 'invalid_rule' not found"
+}
+```
+
+**Aviso:** Deletar regras padrão (`institutional_email_check`, `registration_length_check`) pode afetar o funcionamento do sistema de validação.
 
 ---
 
@@ -361,6 +411,21 @@ curl http://localhost:8001/validations
 curl -X PUT http://localhost:8001/rules/institutional_email_check \
   -H "Content-Type: application/json" \
   -d '{"enabled": false}'
+```
+
+**Criar uma nova regra:**
+```bash
+curl -X POST http://localhost:8001/rules \
+  -H "Content-Type: application/json" \
+  -d '{
+    "rule_name": "custom_rule_check",
+    "enabled": true
+  }'
+```
+
+**Deletar uma regra:**
+```bash
+curl -X DELETE http://localhost:8001/rules/custom_rule_check
 ```
 
 **Deletar uma validação:**

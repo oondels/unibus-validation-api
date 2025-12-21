@@ -56,6 +56,20 @@ class ValidationRecordResponse(BaseModel):
         }
 
 
+class ValidationRuleCreate(BaseModel):
+    """Modelo de solicitação para criar uma nova regra de validação"""
+    rule_name: str
+    enabled: bool = True
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "rule_name": "custom_rule_check",
+                "enabled": True
+            }
+        }
+
+
 class ValidationRuleUpdate(BaseModel):
     """Modelo de solicitação para atualizar regras de validação"""
     enabled: bool
