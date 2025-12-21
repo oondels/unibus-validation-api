@@ -8,7 +8,7 @@ import os
 # SQLite database for independent microservice storage
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "sqlite:///./data/unibus_validation.db"
+    "sqlite:///./students.db"
 )
 
 # SQLite needs check_same_thread=False for FastAPI async operations
