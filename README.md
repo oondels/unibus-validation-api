@@ -449,7 +449,7 @@ unibus-validation-api/
 │       ├── __init__.py          # Inicialização dos routers
 │       ├── routes.py            # Rotas de health check
 │       ├── students.py          # Rotas de validação de estudantes
-│       └── trips.py             # Rotas de regras de validação
+│       └── validation.py        # Rotas de regras de validação
 ├── Dockerfile                    # Configuração da imagem Docker
 ├── docker-compose.yml            # Configuração do Docker Compose
 ├── requirements.txt              # Dependências Python

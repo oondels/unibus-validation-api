@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from app.db import init_db
-from app.routers import routes, students, trips
+from app.routers import routes, students, validation
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -20,7 +20,7 @@ async def startup_event():
 # Include routers
 app.include_router(routes.router)
 app.include_router(students.router)
-app.include_router(trips.router)
+app.include_router(validation.router)
 
 
 if __name__ == "__main__":
